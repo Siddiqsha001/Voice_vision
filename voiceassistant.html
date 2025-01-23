@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #282c34;
+            color: #61dafb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background: #20232a;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        #start-btn {
+            background-color: #61dafb;
+            color: #282c34;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        #start-btn:hover {
+            background-color: #21a1f1;
+            transform: scale(1.1);
+        }
+
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+
+        #output {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #61dafb;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Assistant</h1>
+        <button id="start-btn">Ask a Question</button>
+        <div id="output"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('start-btn');
+            const outputDiv = document.getElementById('output');
+
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            const synth = window.speechSynthesis;
+
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            const responses = {
+                'how are you': 'I am doing well, thank you!',
+                'hi': 'Hello! How can I assist you today?',
+                'what time is it': `The current time is ${new Date().toLocaleTimeString()}.`,
+                'weather in coimbatore': 'Currently, I don\'t have access to real-time weather data, but it\'s generally warm and humid in Coimbatore.',
+                'what is your name': 'I am your friendly voice assistant.',
+                'what can you do': 'I can answer your questions and assist you with various tasks.',
+                'tell me a joke': 'Why don’t scientists trust atoms? Because they make up everything!',
+                'who created you': 'I was created by a team of dedicated developers.'
+            };
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+            });
+
+            recognition.addEventListener('result', (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                outputDiv.textContent = `You said: ${transcript}`;
+                respond(transcript);
+            });
+
+            recognition.addEventListener('end', () => {
+                recognition.stop();
+            });
+
+            function respond(query) {
+                const response = responses[query] || 'Sorry, I did not understand that.';
+                outputDiv.textContent += `\nAssistant: ${response}`;
+                speak(response);
+            }
+
+            function speak(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                synth.speak(utterance);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            margin: 0;
+            color: #333; /* Dark blue color for main text */
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+
+        header, footer {
+            width: 100%;
+            padding: 20px 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 2;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #555; /* Slightly lighter blue color for header and footer text */
+        }
+
+        header h1, footer p {
+            margin: 0;
+        }
+
+        header img {
+            height: 50px;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        #result {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pulse {
+            display: inline-block;
+            animation: pulse 1s infinite;
+        }
+
+        .background-gif {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.2;
+            z-index: 1;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        .chat-box {
+            position: absolute;
+            bottom: 20px;
+            width: 90%;
+            max-width: 600px;
+            z-index: 3;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #6a11cb;
+        }
+
+        .chat-button {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            background-color: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .chat-button:hover {
+            background-color: #2575fc;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            <img src="https://thumbs.dreamstime.com/z/vision-bulb-word-cloud-business-concept-51328714.jpg" alt="Vision Logo"> <!-- Replace with the path to your logo image -->
+            Welcome to Voice Vision - Your everyday companion
+        </h1>
+    </header>
+    <div class="overlay"></div>
+    <img src="https://files.secure.website/wscfus/9943667/28865435/d2b345d75e3557b1.gif" alt="Background Cartoon" class="background-gif">
+
+    <main>
+        <h1 class="pulse">Voice Assistant</h1>
+        <div id="result">Say "Hey Vision" to start</div>
+    </main>
+
+    <div class="chat-box">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Type your question here...">
+        <button id="chat-button" class="chat-button">Submit</button>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Voice Vision. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const chatInput = document.getElementById('chat-input');
+        const chatButton = document.getElementById('chat-button');
+
+        // Initialize recognition
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = function() {
+            resultDiv.innerHTML = "Listening...";
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            if (transcript === 'hey vision') {
+                resultDiv.innerHTML = "Voice assistant activated!";
+            } else {
+                fetch('/process_command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: transcript })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = data.response;
+                    speak(data.response);
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Recognition error:', event.error);
+        };
+
+        recognition.start();
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+        }
+
+        chatButton.addEventListener('click', () => {
+            const query = chatInput.value.trim().toLowerCase();
+            if (query) {
+                fetch('/process_command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: query })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = data.response;
+                    speak(data.response);
+                })
+                .catch(error => console.error('Error:', error));
+                chatInput.value = '';
+            }
+        });
+
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                chatButton.click();
+            }
+        });
+    </script>
+</body>
+</html>

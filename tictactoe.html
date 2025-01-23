@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #282c34;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #fff;
+            animation: bounceIn 1s;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 10px;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s, transform 0.3s;
+            animation: fadeIn 1s ease-in-out;
+        }
+        .cell:hover {
+            background-color: #f0f0f0;
+            transform: scale(1.1);
+        }
+        .cell:active {
+            transform: scale(0.9);
+        }
+        .cell.X {
+            color: #e74c3c;
+            animation: bounce 0.5s;
+        }
+        .cell.O {
+            color: #3498db;
+            animation: bounce 0.5s;
+        }
+        @keyframes bounceIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('board');
+            const cells = document.querySelectorAll('.cell');
+            let currentPlayer = 'X';
+
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            const winningCombinations = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            function startRecognition() {
+                recognition.start();
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                    recognition.stop();
+                    const numberMapping = {
+                        'one': 1, 'two': 2, 'three': 3,
+                        'four': 4, 'five': 5, 'six': 6,
+                        'seven': 7, 'eight': 8, 'nine': 9
+                    };
+                    let cellIndex = parseInt(transcript) - 1;
+                    if (isNaN(cellIndex)) {
+                        cellIndex = numberMapping[transcript] - 1;
+                    }
+
+                    if (!isNaN(cellIndex) && cellIndex >= 0 && cellIndex < 9 && !cells[cellIndex].textContent) {
+                        placeMark(cells[cellIndex], currentPlayer);
+
+                        if (checkWin(currentPlayer)) {
+                            speak(`${currentPlayer} wins! 🏆`);
+                            resetGame();
+                        } else if (isDraw()) {
+                            speak('It\'s a draw! 🤝');
+                            resetGame();
+                        } else {
+                            swapTurns();
+                            startRecognition();
+                        }
+                    } else {
+                        speak('Invalid input. Please say a number between 1 and 9.');
+                        startRecognition();
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    speak('Error occurred in recognition: ' + event.error);
+                    startRecognition();
+                };
+            }
+
+            function speak(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function placeMark(cell, player) {
+                cell.textContent = player === 'X' ? '❌' : '⭕';
+                cell.classList.add(player);
+            }
+
+            function swapTurns() {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                speak(`It's ${currentPlayer}'s turn`);
+            }
+
+            function checkWin(player) {
+                return winningCombinations.some(combination => {
+                    return combination.every(index => {
+                        return cells[index].textContent === (player === 'X' ? '❌' : '⭕');
+                    });
+                });
+            }
+
+            function isDraw() {
+                return [...cells].every(cell => {
+                    return cell.textContent === '❌' || cell.textContent === '⭕';
+                });
+            }
+
+            function resetGame() {
+                setTimeout(() => {
+                    cells.forEach(cell => {
+                        cell.textContent = '';
+                        cell.classList.remove('X', 'O');
+                        cell.addEventListener('click', handleClick, { once: true });
+                    });
+                    currentPlayer = 'X';
+                    speak('New game started. It\'s X\'s turn.');
+                    startRecognition();
+                }, 2000);
+            }
+
+            function handleClick(e) {
+                const cell = e.target;
+                placeMark(cell, currentPlayer);
+
+                if (checkWin(currentPlayer)) {
+                    speak(`${currentPlayer} wins! 🏆`);
+                    resetGame();
+                } else if (isDraw()) {
+                    speak('It\'s a draw! 🤝');
+                    resetGame();
+                } else {
+                    swapTurns();
+                    startRecognition();
+                }
+            }
+
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleClick, { once: true });
+            });
+
+            speak('Game started. It\'s X\'s turn.');
+            startRecognition();
+        });
+    </script>
+</body>
+</html>
